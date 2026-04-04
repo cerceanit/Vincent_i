@@ -50,12 +50,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">      <head>
+    <html lang="en" className="dark">
+      <head></head>
+      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
         <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
           strategy="beforeInteractive"
         />
-      </head>      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
         <LanguageProvider>
           {children}
         </LanguageProvider>
