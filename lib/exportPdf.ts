@@ -1,64 +1,61 @@
 'use client'
 
-declare global {
-  interface Window {
-    html2pdf: any
-  }
-}
-
 export async function exportToPdf(content: string, filename: string): Promise<void> {
   try {
-    // Проверяем, что html2pdf доступен
-    if (!window.html2pdf) {
-      throw new Error('html2pdf library not loaded')
-    }
+    // Динамический импорт pdfmake (только на клиенте)
+    const pdfMake = await import('pdfmake/build/pdfmake')
+    const pdfFonts = await import('pdfmake/build/vfs_fonts')
 
-    // Создаем HTML элемент с содержимым
-    const element = document.createElement('div')
-    element.style.padding = '20mm'
-    element.style.fontFamily = 'Arial, sans-serif'
-    element.style.color = '#000'
-    element.style.lineHeight = '1.6'
+    // Регистрируем шрифты
+    pdfMake.default.vfs = (pdfFonts as any).pdfFonts
 
     // Обрабатываем строки документа
     const lines = content.split('\n')
+    const docContent: any[] = []
+
     lines.forEach((line) => {
-      const p = document.createElement('p')
-      p.style.margin = '5px 0'
-      p.style.fontSize = '11pt'
+      if (line.trim() === '') {
+        docContent.push({ text: '', margin: [0, 2, 0, 2] })
+      } else {
+        // Определяем, является ли это заголовком
+        const isHeader = 
+          line === line.toUpperCase() && 
+          line.trim().length > 0 && 
+          line.trim().length < 50
 
-      // Определяем, является ли это заголовком
-      const isHeader = 
-        line === line.toUpperCase() && 
-        line.trim().length > 0 && 
-        line.trim().length < 50
-
-      if (isHeader) {
-        p.style.fontWeight = 'bold'
-        p.style.fontSize = '14pt'
-        p.style.marginTop = '15px'
-        p.style.marginBottom = '10px'
-        p.style.color = '#333'
+        if (isHeader) {
+          docContent.push({
+            text: line,
+            fontSize: 14,
+            bold: true,
+            margin: [0, 10, 0, 5],
+            color: '#333333'
+          })
+        } else {
+          docContent.push({
+            text: line,
+            fontSize: 11,
+            margin: [0, 2, 0, 2],
+            color: '#000000'
+          })
+        }
       }
-
-      p.textContent = line || ' '
-      element.appendChild(p)
     })
 
-    // Опции для html2pdf
-    const opt = {
-      margin: 15,
-      filename: `${filename}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    // Создаём PDF документ
+    const docDefinition = {
+      content: docContent,
+      pageMargins: [20, 20, 20, 20],
+      defaultStyle: {
+        font: 'Helvetica',
+        size: 11,
+        lineHeight: 1.6
+      }
     }
 
-    // Генерируем и скачиваем PDF через window.html2pdf
-    await window.html2pdf().set(opt).from(element).save().then(() => {
-      console.log('✓ PDF успешно скачан:', filename)
-    })
+    // Генерируем и скачиваем PDF
+    pdfMake.default.createPdf(docDefinition).download(`${filename}.pdf`)
+    console.log('✓ PDF успешно скачан:', filename)
   } catch (error) {
     console.error('❌ Ошибка при генерации PDF:', error)
     throw error

@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import Script from 'next/script'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { LanguageProvider } from '@/hooks/use-language'
@@ -53,10 +52,6 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head></head>
       <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
-        <Script
-          src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
-          strategy="beforeInteractive"
-        />
         <LanguageProvider>
           {children}
         </LanguageProvider>
