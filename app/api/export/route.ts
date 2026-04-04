@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Document, Packer, Paragraph, TextRun } from 'docx'
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 
 function escapeHtml(text: string): string {
   const map: { [key: string]: string } = {
@@ -91,7 +92,12 @@ export async function POST(request: NextRequest) {
 
       let browser
       try {
-        browser = await puppeteer.launch({ headless: true })
+        browser = await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless,
+        })
         const page = await browser.newPage()
         await page.setContent(html, { waitUntil: 'networkidle0' })
         const pdfBuffer = await page.pdf({ format: 'A4', margin: { top: 50, bottom: 50, left: 50, right: 50 } })
