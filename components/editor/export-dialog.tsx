@@ -31,7 +31,7 @@ export function ExportDialog({ content, projectName, format, onClose }: ExportDi
     try {
       if (selectedFormat === 'pdf') {
         // PDF генерируется на фронте
-        exportToPdf(content, projectName || 'document')
+        await exportToPdf(content, projectName || 'document')
         toast.success(language === 'ru' ? 'Документ скачан!' : language === 'kz' ? 'Құжат жүктелді!' : 'Document downloaded!')
         onClose()
       } else if (selectedFormat === 'docx') {
