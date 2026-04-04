@@ -2,60 +2,72 @@
 
 export async function exportToPdf(content: string, filename: string): Promise<void> {
   try {
-    // Динамический импорт pdfmake (только на клиенте)
-    const pdfMake = await import('pdfmake/build/pdfmake')
-    const pdfFonts = await import('pdfmake/build/vfs_fonts')
+    // Создаем новое окно для печати
+    const printWindow = window.open('', '_blank', 'height=500,width=500')
+    if (!printWindow) {
+      throw new Error('Не удалось открыть окно печати')
+    }
 
-    // Регистрируем шрифты
-    pdfMake.default.vfs = (pdfFonts as any).pdfFonts
-
-    // Обрабатываем строки документа
+    // Строим HTML для печати
     const lines = content.split('\n')
-    const docContent: any[] = []
+    let htmlContent = ''
 
     lines.forEach((line) => {
-      if (line.trim() === '') {
-        docContent.push({ text: '', margin: [0, 2, 0, 2] })
-      } else {
-        // Определяем, является ли это заголовком
-        const isHeader = 
-          line === line.toUpperCase() && 
-          line.trim().length > 0 && 
-          line.trim().length < 50
+      const isHeader = 
+        line === line.toUpperCase() && 
+        line.trim().length > 0 && 
+        line.trim().length < 50
 
-        if (isHeader) {
-          docContent.push({
-            text: line,
-            fontSize: 14,
-            bold: true,
-            margin: [0, 10, 0, 5],
-            color: '#333333'
-          })
-        } else {
-          docContent.push({
-            text: line,
-            fontSize: 11,
-            margin: [0, 2, 0, 2],
-            color: '#000000'
-          })
-        }
+      if (isHeader) {
+        htmlContent += `<p style="font-size: 16px; margin: 15px 0 10px 0; text-decoration: underline; font-weight: normal;"><strong>${line}</strong></p>`
+      } else {
+        htmlContent += `<p style="font-size: 12px; margin: 5px 0; font-family: Arial, sans-serif;">${line || '&nbsp;'}</p>`
       }
     })
 
-    // Создаём PDF документ
-    const docDefinition = {
-      content: docContent,
-      pageMargins: [20, 20, 20, 20],
-      defaultStyle: {
-        font: 'Helvetica',
-        size: 11,
-        lineHeight: 1.6
-      }
-    }
+    // Создаём HTML документ
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${filename}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #000;
+              margin: 20px;
+              padding: 0;
+              background: white;
+            }
+            p {
+              margin: 5px 0;
+              padding: 0;
+            }
+            @media print {
+              body { margin: 0; padding: 20mm; }
+            }
+          </style>
+        </head>
+        <body>
+          ${htmlContent}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.close();
+            }
+          </script>
+        </body>
+      </html>
+    `
 
-    // Генерируем и скачиваем PDF
-    pdfMake.default.createPdf(docDefinition).download(`${filename}.pdf`)
-    console.log('✓ PDF успешно скачан:', filename)
+    // Пишем содержимое в новое окно
+    printWindow.document.open()
+    printWindow.document.write(printContent)
+    printWindow.document.close()
+
+    console.log('✓ Диалог печати открыт')
   } catch (error) {
     console.error('❌ Ошибка при генерации PDF:', error)
     throw error
