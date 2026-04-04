@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { FileText, FileImage, Download, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { exportToPdf } from '@/lib/exportPdf'
 
 interface ExportDialogProps {
   content: string
@@ -28,33 +29,41 @@ export function ExportDialog({ content, projectName, format, onClose }: ExportDi
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const response = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          filename: projectName || 'document',
-          format: selectedFormat,
-        }),
-      })
+      if (selectedFormat === 'pdf') {
+        // PDF генерируется на фронте
+        exportToPdf(content, projectName || 'document')
+        toast.success(language === 'ru' ? 'Документ скачан!' : language === 'kz' ? 'Құжат жүктелді!' : 'Document downloaded!')
+        onClose()
+      } else if (selectedFormat === 'docx') {
+        // DOCX генерируется на сервере (для правильного форматирования)
+        const response = await fetch('/api/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content,
+            filename: projectName || 'document',
+            format: selectedFormat,
+          }),
+        })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Export failed')
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Export failed')
+        }
+
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${projectName || 'document'}.${selectedFormat}`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+        toast.success(language === 'ru' ? 'Документ скачан!' : language === 'kz' ? 'Құжат жүктелді!' : 'Document downloaded!')
+        onClose()
       }
-
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${projectName || 'document'}.${selectedFormat}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      toast.success(language === 'ru' ? 'Документ скачан!' : language === 'kz' ? 'Құжат жүктелді!' : 'Document downloaded!')
-      onClose()
     } catch (error) {
       console.error('Export error:', error)
       toast.error(error instanceof Error ? error.message : t('error'))
