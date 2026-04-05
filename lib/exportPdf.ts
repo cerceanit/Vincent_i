@@ -2,13 +2,7 @@
 
 export async function exportToPdf(content: string, filename: string): Promise<void> {
   try {
-    // Создаем новое окно для печати
-    const printWindow = window.open('', '_blank', 'height=500,width=500')
-    if (!printWindow) {
-      throw new Error('Не удалось открыть окно печати')
-    }
-
-    // Строим HTML для печати
+    // Строим HTML для PDF
     const lines = content.split('\n')
     let htmlContent = ''
 
@@ -26,7 +20,7 @@ export async function exportToPdf(content: string, filename: string): Promise<vo
     })
 
     // Создаём HTML документ
-    const printContent = `
+    const htmlDoc = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -52,22 +46,16 @@ export async function exportToPdf(content: string, filename: string): Promise<vo
         </head>
         <body>
           ${htmlContent}
-          <script>
-            window.onload = function() {
-              window.print();
-              window.close();
-            }
-          </script>
         </body>
       </html>
     `
 
-    // Пишем содержимое в новое окно
-    printWindow.document.open()
-    printWindow.document.write(printContent)
-    printWindow.document.close()
+    // Создаём blob и открываем в новой вкладке
+    const blob = new Blob([htmlDoc], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank')
 
-    console.log('✓ Диалог печати открыт')
+    console.log('✓ Документ открыт в новой вкладке')
   } catch (error) {
     console.error('❌ Ошибка при генерации PDF:', error)
     throw error

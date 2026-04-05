@@ -56,10 +56,15 @@ export function ExportDialog({ content, projectName, format, onClose }: ExportDi
         const a = document.createElement('a')
         a.href = url
         a.download = `${projectName || 'document'}.${selectedFormat}`
+        a.style.display = 'none'
         document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
+        setTimeout(() => {
+          a.click()
+          setTimeout(() => {
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+          }, 100)
+        }, 0)
 
         toast.success(language === 'ru' ? 'Документ скачан!' : language === 'kz' ? 'Құжат жүктелді!' : 'Document downloaded!')
         onClose()
